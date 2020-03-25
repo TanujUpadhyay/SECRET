@@ -37,7 +37,8 @@ mongoose.set("useCreateIndex",true);
 const userSchema= new mongoose.Schema({
     email:String,
     password:String,
-    googleId:String
+    googleId:String,
+    secret:String
 });
 
 //userSchema.plugin(encrypt,{secret:process.env.SECRET,encryptedFields:["password"]});
@@ -123,14 +124,6 @@ app.get("/auth/facebook/secrets",
 
 app.get("/register",(req,res)=>{
     res.render("register");
-});
-
-app.get("/secrets",(req,res)=>{
-    if(req.isAuthenticated())
-        res.render("secrets");
-    else
-        res.redirect("/login");
-    
 });
 
 
@@ -222,6 +215,46 @@ app.post("/login",(req,res)=>{
     });
 });
 
+
+
+app.get("/secrets",(req,res)=>{
+   User.find({"secret":{$ne:null}},(err,foundUser)=>{
+       if(err)
+            console.log(err);
+        else{
+            if(foundUser){
+                res.render("secrets",{userWithSecrets:foundUser});
+            }
+        }
+   });
+    
+});
+
+
+app.get("/submit",(req,res)=>{
+    if(req.isAuthenticated())
+        res.render("submit");
+    else
+        res.redirect("/login");
+
+});
+
+app.post("/submit",(req,res)=>{
+    const submitedSecrets = req.body.secret;
+    User.findById(req.user.id,(err,founduser)=>{
+        if(err)
+            console.log(err);
+        else{
+            if(founduser){
+                founduser.secret=submitedSecrets;
+                founduser.save(()=>{
+                    res.redirect("/secrets");
+                });
+            }
+        }
+    });
+
+});
 
 app.listen("3000",()=>{
     console.log("Server is runing on port 3000....");
